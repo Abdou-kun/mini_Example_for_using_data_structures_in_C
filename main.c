@@ -1,11 +1,13 @@
 #include<stdlib.h>
 #include<stdio.h>
 #include<string.h>
+#include<time.h>
 
 #define TailleMaxDeLaChaine 20
-#define ParkingRailSize 5
-#define MapSize 10
-
+#define ParkingRailSize 11
+#define MapSize 6
+#define MaxTrain 11
+#define MaxParkingRails 11
 // les types
 
 typedef char chaine[TailleMaxDeLaChaine];
@@ -69,14 +71,86 @@ int SiTrainRemplis(Train TrainCourant);
 void MiseAJourTableauDesTrain(Train TrainPourDepart,Train * Trains,int NumTrain);
 Passagers Embarquement (ParkingRail * Quaies, int NumQuaie, Passagers PassagerPretPourEmbarquement, chaine Destinations[MapSize][2], int NumDestination, Train * Trains, int NumTrain);
 void TrainEnMarche(ParkingRail * Quaies,int NumQuai,  Train * Trains, int NumTrain);
+int InitialiserLesDestinationsDisponibles(chaine Destinations[MapSize][2]);
+
 
 // la fonction main
 
-int main(int argc, char *argv[])
+int main()
 {
+    //Declaration des structures de donnees
+    Train Trains[MaxTrain];// tableau de train
+    ParkingRail Quais[MaxParkingRails]; // tableau de quais
+    int NumTrain = 0;//Nombre de train qu'il y'a dans la gare
+    int NumQuai = 0;// nombre de quais / Parking rail qu'il y'a dans la gare
+    chaine Destinations[MapSize][2]; // matrice des destinations
+    int NumDestinations = InitialiserLesDestinationsDisponibles(Destinations);
 
+    // Ajout des trains
+
+    NumTrain = AjouterTrain(Trains,NumTrain,15,"Tokyo");
+    NumTrain = AjouterTrain(Trains,NumTrain,10,"Helsinki");
+    NumTrain = AjouterTrain(Trains,NumTrain,10,"Helsinki");
+    NumTrain = AjouterTrain(Trains,NumTrain,10,"Tokyo");
+    NumTrain = AjouterTrain(Trains,NumTrain,10,"Berlin");
+    NumTrain = AjouterTrain(Trains,NumTrain,8,"Nairobi");
+    NumTrain = AjouterTrain(Trains,NumTrain,10,"Denver");
+    NumTrain = AjouterTrain(Trains,NumTrain,10,"Nairobi");
+    NumTrain = AjouterTrain(Trains,NumTrain,10,"Berlin");
+    NumTrain = AjouterTrain(Trains,NumTrain,10,"Ouergla");
+
+    // Ajouter les Quais
+
+    NumQuai = AjouterQuais(Quais,NumQuai,"Q1",2,Trains, NumTrain);
+    NumQuai = AjouterQuais(Quais,NumQuai,"El Moudjahid",1,Trains, NumTrain);
+    NumQuai = AjouterQuais(Quais,NumQuai,"Roberto Carlos",1,Trains,NumTrain);
+    Passagers ListeDesPassagerEnAttente=NULL; // declarer la liste des passagers en attente
+
+    //Commencer la simulation
+
+    int NbrHeur = 0;
+    while(1){// nous pouvons remplacer le 1 par un nombre d'iteration bien precis !
+        AfficherParkingRail(Quais,NumQuai); // afficher l'etat des quais pour voir ou se trouve les train.
+        NbrHeur++;
+        printf("************Heure %d***********\n\n",NbrHeur);
+        srand(time(NULL));// appeler la fonction random pour generer des nombres aleatoire de reservations et d'annulations
+        int NombreAleatoireDeReservations = rand() % 10 + 5;
+        int NombreAleatoireDAnulations = rand() % 5;
+        // nous devons nous assurer que le nombres de reservations soit strictement superieurs aux nombre d'annulations
+        printf("Nombre de reservations : %d\n",NombreAleatoireDeReservations);
+        printf("Nombre d'annulations : %d\n",NombreAleatoireDAnulations);
+        for (int i=0;i<NombreAleatoireDeReservations;i++){
+            int ChoisirUneDestinationAleatoire=rand()%(NumDestinations+1);
+            ListeDesPassagerEnAttente=ReservationPlace(ListeDesPassagerEnAttente,
+            Trains,NumTrain,Destinations[ChoisirUneDestinationAleatoire][0]);
+            // reserver des places et ajouter des passagers dans la liste d'attente, a ce stade, aucun passager n'est dans le train, rien que la variable � place prises � est incrementer pour dire que les places sont reservees
+        }
+        for (int i=0;i<NombreAleatoireDAnulations;i++){
+            int ChoisirUnIDPourAnulationAleatoire = rand() % TailleListe(ListeDesPassagerEnAttente);
+            ListeDesPassagerEnAttente = AnnulerReservation(ListeDesPassagerEnAttente,ChoisirUnIDPourAnulationAleatoire);
+            // briser la liste chainee � ListeDesPassagersEnAttente � et enlever les passagers qui souhaites annuler leurs reservations.
+        }
+        printf("\n Nombre de passagers en attente %d\n",TailleListe(ListeDesPassagerEnAttente));
+        AfficherPassagers(ListeDesPassagerEnAttente);
+        // affichier l��tat des passagers en attente avant embarquement et apr�s que les rEservations et annulations soient faites
+        ListeDesPassagerEnAttente = Embarquement(Quais, NumQuai,ListeDesPassagerEnAttente, Destinations,NumDestinations, Trains,NumTrain);
+        // Embarquer les passager !
+        AfficherTrains(Trains,NumTrain);
+        //afficher l��tat des trains pour voir si ils ont pris des passagers avec eux.
+        TrainEnMarche(Quais,NumQuai, Trains, NumTrain);
+        // lancer les trains qui sont les premiers dans les quais
+        printf("\n Nombre de passagers en attente apres embarquement%d\n",TailleListe(ListeDesPassagerEnAttente));
+        AfficherPassagers(ListeDesPassagerEnAttente);
+        // afficher l'etat des passagers en attente apres embarquement, dans le cas ou votre programme marche correctement, il ne devrai y avoir aucun passager qui demande une destination qui vient d'etre propose par un train sur le depart sauf si le train est remplis a 100%.
+        UpdateQuais( Quais, NumQuai, Trains, NumTrain );
+        //Mettre a jour les quais en recuperant les train en attente et en avancant les tarins dans la pile pour proposer de nouvelle destinations.
+        system("pause");// arreter le programme pour avoir le temps de lire les affichages
+        // vous pouvez ajouter un � clearscreen � ici mais ceci vous empechera d'avoir une vue sur l'historique
+    }
+    //*/
     return 0;
 }
+
 
 // les corps des fonctions
 
@@ -177,7 +251,7 @@ Train Depiler (ParkingRail* ParkingForTrain)
 void AfficherParkingRail(ParkingRail* ParkingRails, int NumParkingRail){
 
 /******************************************************************************/
-printf("Le nombre de Quais dans la gare est de %d\n \n",NumParkingRail);
+	printf("Le nombre de Quais dans la gare est de %d\n \n",NumParkingRail);
 
 	for (int i=0;i<NumParkingRail;i++){
 
@@ -192,6 +266,7 @@ printf("Le nombre de Quais dans la gare est de %d\n \n",NumParkingRail);
 // la fonction 9
 
 int PileVide(ParkingRail * ParkingForTrain)
+
 {
 	if(ParkingForTrain->IndexPremierTrain == -1) return 1;
 		else return 0;
@@ -295,17 +370,47 @@ int ExistIdDansListe(int IDRecherche,Passagers ListePassager)
 
 // la fonction 16
 
-Passagers AnnulerReservation(Passagers ListePassagers,int IDAnulation);
+Passagers AnnulerReservation(Passagers ListePassagers,int IDAnulation)
 {
+	Passagers q,p = ListePassagers;
 
+	if(ExistIdDansListe(IDAnulation, p)){
+		if(p->ID = IDAnulation)
+		{
+			q = p;
+			p = p->PassagerSuivant;
+			free(q);
+		}else{
+			while((p->PassagerSuivant != NULL) && (p->ID != IDAnulation)){
+				q=p;
+				p = p->PassagerSuivant;
+			}
+			if(p != NULL){
+				q->PassagerSuivant = p->PassagerSuivant;
+				free(p);
+			}
+		}
+	}
+	return ListePassagers;
 }
+
 // la fonction 17
 
+Passagers AjouterPassagerDansLaListe (Passager PassagerAAjouter, Passagers ListeDesPassagers)
+{
+	Passagers p = (Passagers)malloc(sizeof(Passager));
+
+	*p = PassagerAAjouter;
+	p->PassagerSuivant = ListeDesPassagers;
+	ListeDesPassagers = p;
+
+	return ListeDesPassagers;
+}
 // la fonction 18
 
-void AfficherPassagers(Passagers ListePassagers){
-
-Passagers ParcoursPassager=ListePassagers;
+void AfficherPassagers(Passagers ListePassagers)
+{
+	Passagers ParcoursPassager=ListePassagers;
 
 	if (TailleListe(ParcoursPassager)==0){
 	    printf("\n**Aucune reservation faite !\n");
@@ -367,6 +472,7 @@ Passagers DetruireLalisteDePassagers(Passagers p)
 	} 
 	return p;
 }
+
 // les corps des fonctions de train
 
 // la fonction 20
@@ -393,8 +499,16 @@ Train ViderTrain(Train T)
 	T.kilometreRestant = -1;
 	DetruireLalisteDePassagers(T.PassagersDuTrain);
 }
-
 // la fonction 22
+
+int AjouterTrain(Train * Trains, int Id, int Capacitee, chaine Destination)
+{
+	Trains[Id] = CreerTrain(Id, Capacitee, Destination);
+
+	return Id + 1;
+}
+
+// la fonction 23
 
 void AfficherTrains(Train * Trains, int nbrTrains)
 {
@@ -414,6 +528,12 @@ void AfficherTrains(Train * Trains, int nbrTrains)
 }
 
 // fonction 24
+
+int SiTrainRemplis(Train TrainCourant)
+{
+	if(TrainCourant.PlacesSupportees == TrainCourant.PlacesPrises) return 1;
+		else return 0;
+}
 
 // fonction 25
 
@@ -461,10 +581,6 @@ Passagers Embarquement(ParkingRail * Quaies, int NumQuaie, Passagers PassagerPre
 	return PassagerPretPourEmbarquement;
 }
 
-// fonction 27
-
-// fonction 28
-
 // fonction 29
 
 void TrainEnMarche(ParkingRail * Quaies,int NumQuai,  Train * Trains, int NumTrain){
@@ -478,13 +594,32 @@ void TrainEnMarche(ParkingRail * Quaies,int NumQuai,  Train * Trains, int NumTra
 
 	        if(Empiler(Trains[i],&Quaies[ChoixAleatoireQuai]))
 	            printf("Train Id=%d revient de %s rentre dans le Quai %s\n",Trains[i].identifiant,Trains[i].Destination,Quaies[ChoixAleatoireQuai].Identifiant);
-	        else
-	        {
-	            printf("\ntout les quaies sont remplis\n Train ID=%d en attente ",Trains[i].identifiant);
-	            Trains[i].kilometreRestant = - 1;
-	        }
+				else{
+					printf("\ntout les quaies sont remplis\n Train ID=%d en attente ",Trains[i].identifiant);
+					Trains[i].kilometreRestant = - 1;
+				}
 	    }
 	    else if(Trains[i].kilometreRestant > 5)
-	        Trains[i].kilometreRestant=Trains[i].kilometreRestant - 5;
+	        	Trains[i].kilometreRestant=Trains[i].kilometreRestant - 5;
 	}
+}
+
+// la fonction 30
+
+int InitialiserLesDestinationsDisponibles(chaine Destinations[MapSize][2])
+{
+	strcpy(Destinations[0][0], "Tokyo");
+	strcpy(Destinations[0][1], "100");
+	strcpy(Destinations[1][0], "Ouergla");
+	strcpy(Destinations[1][1], "15");
+	strcpy(Destinations[2][0], "Helsinki");
+	strcpy(Destinations[2][1], "40");
+	strcpy(Destinations[3][0], "Denver");
+	strcpy(Destinations[3][1], "45");
+	strcpy(Destinations[4][0], "Rio");
+	strcpy(Destinations[4][1], "10");
+	strcpy(Destinations[5][0], "Berlin");
+	strcpy(Destinations[5][1], "20");
+
+	return 6;
 }
