@@ -8,6 +8,7 @@
 #define MapSize 6
 #define MaxTrain 11
 #define MaxParkingRails 11
+
 // les types
 
 typedef char chaine[TailleMaxDeLaChaine];
@@ -35,7 +36,7 @@ typedef struct ParkingRail{
 
 // les prototypes des fonctions 
 
-// les fonctions de implementation
+// les fonctions d'implementation
 
 ParkingRail CreerUnParkingRail(chaine Identifiant, int Capacity);
 int PileRemplie(ParkingRail PK);
@@ -73,7 +74,6 @@ Passagers Embarquement (ParkingRail * Quaies, int NumQuaie, Passagers PassagerPr
 void TrainEnMarche(ParkingRail * Quaies,int NumQuai,  Train * Trains, int NumTrain);
 int InitialiserLesDestinationsDisponibles(chaine Destinations[MapSize][2]);
 
-
 // la fonction main
 
 int main()
@@ -109,6 +109,7 @@ int main()
     //Commencer la simulation
 
     int NbrHeur = 0;
+
     while(1){// nous pouvons remplacer le 1 par un nombre d'iteration bien precis !
         AfficherParkingRail(Quais,NumQuai); // afficher l'etat des quais pour voir ou se trouve les train.
         NbrHeur++;
@@ -151,7 +152,6 @@ int main()
     return 0;
 }
 
-
 // les corps des fonctions
 
 // les corps des fonctions de l'implementation
@@ -173,8 +173,8 @@ ParkingRail CreerUnParkingRail(chaine Identifiant, int Capacity)
 
 int PileRemplie(ParkingRail PK)
 {
-	if(PK.IndexPremierTrain == PK.Capacity) return 0;
-		else return 1;	
+	if(PK.IndexPremierTrain + 1 == PK.Capacity) return 1;
+		else return 0;	
 }
 
 // la fonction 3
@@ -197,7 +197,7 @@ ParkingRail TrouverDesTrainDisponible(ParkingRail ParkingForTrain, Train * Train
 
 int Empiler(Train TrainCourant, ParkingRail* ParkingForTrain)
 {
-	if(0 == PileRemplie) return 0;
+	if(PileRemplie(*ParkingForTrain)) return 0;
 		else{
 			++ParkingForTrain->IndexPremierTrain;
 			ParkingForTrain->ListeDesTrains[ParkingForTrain->IndexPremierTrain] = TrainCourant;
@@ -243,6 +243,7 @@ Train Depiler (ParkingRail* ParkingForTrain)
 		else{
 			t = ParkingForTrain->ListeDesTrains[ParkingForTrain->IndexPremierTrain];
 			--ParkingForTrain->IndexPremierTrain;
+
 			return t;
 		}
 }
@@ -258,7 +259,7 @@ void AfficherParkingRail(ParkingRail* ParkingRails, int NumParkingRail){
 		printf("Le nombre de train dans le quai %s est de %d \n", ParkingRails[i].Identifiant, ParkingRails[i].IndexPremierTrain + 1);
 
 		for (int j=ParkingRails[i].IndexPremierTrain;j>=0;j--){
-		    printf("le train ID=%d prendra le depart en %d position\n",ParkingRails[i].ListeDesTrains[j].identifiant, ParkingRails[i].IndexPremierTrain - j + 1);
+		    printf("le train ID= %d prendra le depart en %d position\n",ParkingRails[i].ListeDesTrains[j].identifiant, ParkingRails[i].IndexPremierTrain - j + 1);
 		}
 	}
 }
@@ -299,10 +300,11 @@ int SiListeVide(Passagers ListePassager)
 int TailleListe(Passagers ListePassager)
 {
 	int n=0;
+	Passagers p = ListePassager;
 
-	while(ListePassager != NULL){
+	while(p != NULL){
 		n++;
-		ListePassager = ListePassager->PassagerSuivant;
+		p = p->PassagerSuivant;
 	}
 
 	return n;
@@ -312,15 +314,19 @@ int TailleListe(Passagers ListePassager)
 
 Passagers AvoirDernierElementList(Passagers ListePassager)
 {
-	while(ListePassager->PassagerSuivant != NULL) ListePassager = ListePassager->PassagerSuivant;
+	Passagers p = ListePassager;
 
-	return ListePassager;
+	if(SiListeVide(p)) return p;
+
+	while(p->PassagerSuivant != NULL) p = p->PassagerSuivant;
+
+	return p;
 }
 
 // la fonction 14
 
-Passagers ReservationPlace(Passagers ListePassagers, Train * Trains, int NumTrain, chaine Destination){
-
+Passagers ReservationPlace(Passagers ListePassagers, Train * Trains, int NumTrain, chaine Destination)
+{
 	//nous supposons que la destination n'existe pas
 	int SiDestinationTrouvee = 0;
 	//Verifier si la destination est disponible
@@ -358,37 +364,42 @@ Passagers ReservationPlace(Passagers ListePassagers, Train * Trains, int NumTrai
 
 int ExistIdDansListe(int IDRecherche,Passagers ListePassager)
 {
-	if(SiListeVide(ListePassager))  printf("La liste est vide");
+	Passagers p = ListePassager;
+
+	if(SiListeVide(p))  printf("La liste est vide");
 		else{
-				while(ListePassager != NULL){
-					if(IDRecherche == ListePassager->ID) return 1;
-					ListePassager = ListePassager->PassagerSuivant;
-				}	
-			}
+			while(p != NULL){
+				if(IDRecherche == p->ID) return 1;
+				p = p->PassagerSuivant;
+			}	
+		}
 	return 0;
 }
 
 // la fonction 16
 
-Passagers AnnulerReservation(Passagers ListePassagers,int IDAnulation)
+Passagers AnnulerReservation(Passagers ListePassagers, int IDAnulation)
 {
 	Passagers q,p = ListePassagers;
 
 	if(ExistIdDansListe(IDAnulation, p)){
-		if(p->ID = IDAnulation)
+		if(p->ID == IDAnulation)
 		{
 			q = p;
 			p = p->PassagerSuivant;
 			free(q);
+
+			return p;
 		}else{
-			while((p->PassagerSuivant != NULL) && (p->ID != IDAnulation)){
-				q=p;
+			while((p != NULL) && (p->ID != IDAnulation)){
+				q = p;
 				p = p->PassagerSuivant;
 			}
 			if(p != NULL){
 				q->PassagerSuivant = p->PassagerSuivant;
 				free(p);
 			}
+			return ListePassagers;
 		}
 	}
 	return ListePassagers;
@@ -398,7 +409,7 @@ Passagers AnnulerReservation(Passagers ListePassagers,int IDAnulation)
 
 Passagers AjouterPassagerDansLaListe (Passager PassagerAAjouter, Passagers ListeDesPassagers)
 {
-	Passagers p = (Passagers)malloc(sizeof(Passager));
+	Passagers p = CreerPassager(PassagerAAjouter.ID, PassagerAAjouter.Destination);
 
 	*p = PassagerAAjouter;
 	p->PassagerSuivant = ListeDesPassagers;
@@ -463,8 +474,7 @@ Passagers DetruireLalisteDePassagers(Passagers p)
 	Passagers q;
 
 	if(!SiListeVide(p)){
-		while (p != NULL)
-		{
+		while (p != NULL){
 			q = p;
 			p = p->PassagerSuivant;
 			free(q);
@@ -498,6 +508,8 @@ Train ViderTrain(Train T)
 	T.PlacesPrises = 0;
 	T.kilometreRestant = -1;
 	DetruireLalisteDePassagers(T.PassagersDuTrain);
+
+	return T;
 }
 // la fonction 22
 
@@ -540,12 +552,13 @@ int SiTrainRemplis(Train TrainCourant)
 void MiseAJourTableauDesTrain(Train TrainPourDepart,Train * Trains,int NumTrain)
 {
 	for (int i=0;i<NumTrain;i++){
-	    if (TrainPourDepart.identifiant==Trains[i].identifiant){
-	        Trains[i]=TrainPourDepart;
+	    if (TrainPourDepart.identifiant == Trains[i].identifiant){
+	        Trains[i] = TrainPourDepart;
 	        return;
 	    }
     }
 }
+
 // fonction 26
 
 Passagers Embarquement(ParkingRail * Quaies, int NumQuaie, Passagers PassagerPretPourEmbarquement, chaine Destinations[MapSize][2], int NumDestination, Train * Trains, int NumTrain)
@@ -565,7 +578,7 @@ Passagers Embarquement(ParkingRail * Quaies, int NumQuaie, Passagers PassagerPre
             }
             Passagers ParcourirPassager = PassagerPretPourEmbarquement;
             while(ParcourirPassager != NULL){
-                if((strcmp(ParcourirPassager->Destination,TrainPourDepart.Destination) == 0) && (!SiTrainRemplis(TrainPourDepart))){
+                if((strcmp(ParcourirPassager->Destination, TrainPourDepart.Destination) == 0) && (!SiTrainRemplis(TrainPourDepart))){
                     //Enlever de la liste des passager en attente et le mettre dans la liste des passagers dans le train
                     Passager PassagerTmp = SupprimerPassagerListeAttenteEtLeRetourner(&PassagerPretPourEmbarquement,ParcourirPassager->ID);
                     //Le mettre dans le train
@@ -583,7 +596,8 @@ Passagers Embarquement(ParkingRail * Quaies, int NumQuaie, Passagers PassagerPre
 
 // fonction 29
 
-void TrainEnMarche(ParkingRail * Quaies,int NumQuai,  Train * Trains, int NumTrain){
+void TrainEnMarche(ParkingRail * Quaies,int NumQuai,  Train * Trains, int NumTrain)
+{
 	// Vitesse constante pour tout les trains de 5 ! votre job est de la rendre dynamique en utilisant a la plce la variable Train[i].vitesse
 	for (int i=0;i<NumTrain;i++){
 
@@ -623,3 +637,5 @@ int InitialiserLesDestinationsDisponibles(chaine Destinations[MapSize][2])
 
 	return 6;
 }
+
+// The end :)
